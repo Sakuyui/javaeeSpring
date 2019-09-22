@@ -1,0 +1,38 @@
+<!DOCTYPE html>
+<html lang="en" xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="UTF-8">
+    <title>软院找人</title>
+    <link rel="stylesheet" href="https://cdn.staticfile.org/twitter-bootstrap/3.3.7/css/bootstrap.min.css">
+    <link rel="stylesheet" href="/static/css/index.css" type="text/css">
+    <script src="https://cdn.staticfile.org/jquery/2.1.1/jquery.min.js"></script>
+    <script src="https://cdn.staticfile.org/twitter-bootstrap/3.3.7/js/bootstrap.min.js"></script>
+
+</head>
+<body>
+<h1>Hello World!</h1>
+<div>
+    <img th:src="@{static/images/searchLogo.png}" class="img-responsive center-block img_search" />
+</div>
+<div class="searchbox">
+    <img th:src="@{static/images/a.png}" class="optionIcon" onclick="hideOrShowLimitInput()">
+    <input type="text" value="" class="searchtxt" id="searchBox" />
+
+
+    <input type="submit" onclick="doPostinf()" value="搜索" class="searchbutton">
+</div>
+
+<img src="/static/images/2233.jpg" class="bmllogo">
+<script type="text/javascript">
+    function doPostinf(){
+        var textbox=document.getElementById('searchBox')
+        var str=textbox.value
+        if (str == null || str == '') {
+            alert("请输入关键字");
+            return;
+        }
+        window.location.href='/searchstu?str='+str
+    }
+</script>
+</body>
+</html>

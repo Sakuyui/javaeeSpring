@@ -1,0 +1,243 @@
+<!DOCTYPE html>
+<html lang="en" xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="UTF-8">
+    <title>人脸搜索结果</title>
+
+
+    <script th:src="@{/static/jquery-3.4.1.js}"></script>
+    <!-- 最新版本的 Bootstrap 核心 CSS 文件 -->
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@3.3.7/dist/css/bootstrap.min.css" integrity="sha384-BVYiiSIFeK1dGmJRAkycuHAHRg32OmUcww7on3RYdg4Va+PmSTsz/K68vbdEjh4u" crossorigin="anonymous">
+    <!-- 可选的 Bootstrap 主题文件（一般不用引入） -->
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@3.3.7/dist/css/bootstrap-theme.min.css" integrity="sha384-rHyoN1iRsVXV4nD0JutlnGaslCJuC7uwjduW9SVrLvRYooPp2bWYgmgJQIXwl/Sp" crossorigin="anonymous">
+
+    <!-- 最新的 Bootstrap 核心 JavaScript 文件 -->
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@3.3.7/dist/js/bootstrap.min.js" integrity="sha384-Tc5IQib027qvyjSMfHjOMaLkfuWVxZxUPnCJA7l2mCWNIpG9mGCD8wGNIcPD7Txa" crossorigin="anonymous"></script>
+    <!-- Latest compiled and minified CSS -->
+    <link rel="stylesheet" href="https://unpkg.com/bootstrap-table@1.15.4/dist/bootstrap-table.min.css">
+
+    <!-- Latest compiled and minified JavaScript -->
+    <script src="https://unpkg.com/bootstrap-table@1.15.4/dist/bootstrap-table.min.js"></script>
+    <!-- Latest compiled and minified Locales -->
+    <script src="https://unpkg.com/bootstrap-table@1.15.4/dist/locale/bootstrap-table-zh-CN.min.js"></script>
+    <script src="/static/js/searchUI.js" type="text/javascript" charset="UTF-8"></script>
+    <link rel="stylesheet" href="/static/css/result.css">
+
+    <script type="text/javascript" th:src="@{/js/index.js}"></script>
+    <script type="text/javascript" src="/static/js/bootstrap-paginator.js"></script>
+</head>
+<body>
+
+
+<div align="center">
+    <div style="margin-top: 1%">
+        <img th:src="@{static/images/icon_camera.png}" class="optionIcon" onclick="doChooseImg()" style="width: 50px;height: 50px;">
+
+    </div>
+
+    &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
+
+
+
+    <!--bootstrap表单-->
+    <table id="tablestyle" class="table table-bordered tab-content table table-hover table-striped">
+        <thead>
+        <tr >
+            <th th:colspan="1" width="15%">
+
+                <label style="float:left;margin-right: 3%;vertical-align: center">Limit:</label>
+                <input type="text" style="width: 15%;float: left;margin-right: 3%" class="form-control" id="pzsizeBox" th:value="${pzsize}">
+                <button onclick="doApplyLimit()" type="button" class="RoleOfdelete btn btn-primary  btn-sm" style="margin-left:15px;text-align: right">Apply</button>
+            </th>
+            <th th:colspan="6" style="text-align: center">搜索结果</th>
+
+        </tr>
+
+        <tr>
+            <th style="text-align: center">学号</th>
+            <th style="text-align: center">姓名</th>
+            <th style="text-align: center">手机号</th>
+            <th style="text-align: center">QQ号</th>
+            <th style="text-align: center">E-Mail</th>
+            <th style="text-align: center">人脸数据</th>
+            <th style="text-align: center">匹配度</th>
+        </tr>
+        </thead>
+
+        <thead>
+
+        </thead>
+        <tr align="center" th:each="list: ${pages.list}">
+            <td><a th:href="@{/getUser(id=${list.entity.id})}">[[${list.entity.id}]]</a></td>
+            <td th:text="${list.entity.name}"></td>
+            <td th:text="${list.entity.phone}"></td>
+            <td th:text="${list.entity.qq}"></td>
+            <td th:text="${list.entity.email}"></td>
+            <td>
+
+
+                <a  th:data-img="${list.entity.img}" onclick="showImg(this.getAttribute('data-img'))">
+                    <button  type="button" class="RoleOfdelete btn btn-primary  btn-sm" style="margin-right:15px;">查看</button>
+                </a>
+            </td>
+            <td th:text="${list.score}"></td>
+
+
+        </tr>
+
+    </table>
+
+
+
+</div>
+
+
+<div align="center">
+
+    <a th:unless="${pages.isFirstPage}"
+       th:href="@{/faceresult()}">首 页</a>
+    <a th:unless="${pages.isFirstPage}"
+       th:href="@{/faceresult(start=${pages.hasPreviousPage}?${pages.prePage}:1)}">上一页</a>
+    <a th:unless="${pages.isLastPage}"
+       th:href="@{/faceresult(start=${pages.hasNextPage}?${pages.nextPage}:${pages.pages})}">下一页</a>
+    <a th:unless="${pages.isLastPage}"
+       th:href="@{/faceresult(start=${pages.pages})}">末 页</a>
+</div>
+
+
+
+
+<!-- 照片显示 -->
+<div class="modal fade" id="imgModal" tabindex="-1" role="dialog" aria-labelledby="myModalLabel" aria-hidden="true">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <button type="button" class="close" data-dismiss="modal" aria-hidden="true">&times;</button>
+                <h4 class="modal-title" id="myModalLabel5">个人照片</h4>
+            </div>
+
+
+            <div >
+                <label>源图片:</label>
+                <img id="photoBox_source" th:src="'data:image/jpeg;base64,'+${sourceimg}" style="width: auto;height: 400px">
+            </div>
+            <div>
+                <label>匹配图片:</label>
+                <img id="photoBox" src="" style="width: auto;height: 400px">
+            </div>
+
+
+            <div class="modal-footer">
+                <button type="button" class="btn btn-default" data-dismiss="modal">取消</button>
+            </div>
+        </div><!-- /.modal-content -->
+    </div><!-- /.modal -->
+</div>
+
+
+
+
+
+<nav style="text-align: center;">
+    <ul class="pagination" id="paginationBar">
+
+    </ul>
+</nav>
+
+
+
+</body>
+<!-- 照片选择 -->
+<div class="modal fade" id="uploadModal" tabindex="-1" role="dialog" aria-labelledby="myModalLabel" aria-hidden="true">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <button type="button" class="close" data-dismiss="modal" aria-hidden="true">&times;</button>
+                <h4 class="modal-title" id="myModalLabel">照片选择</h4>
+            </div>
+
+
+            <div class="form-group">
+                <label class="sr-only">文件输入</label>
+                <input type="file" id="inputimg" accept="image/*">
+            </div>
+
+            <div class="modal-body">
+                <label id="imgStuID"></label>
+                <img id="photoBoxup" src="" style="width: 500px;height: auto;">
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-default" data-dismiss="modal">取消</button>
+                <button type="button" class="btn btn-default" data-dismiss="modal" onclick="doFaceSearch()">确定</button>
+            </div>
+        </div><!-- /.modal-content -->
+    </div><!-- /.modal -->
+</div>
+
+
+<script type="text/javascript">
+    //显示照片
+    function showImg(img){
+        //alert(1)
+        document.getElementById("photoBox").src = "faces/"+img;
+        $('#imgModal').modal();
+    }
+    function doFaceSearch() {
+        var file = $('#inputimg').get(0).files[0];
+
+
+        if(typeof(file)=="undefined" || file==''){
+            alert('未选择文件');
+            return;
+        }else{
+
+        }
+
+
+
+        var formData=new FormData();
+        formData.append('img',file);
+
+        $.ajax({
+            type: "post",
+            cache: false,
+            contentType:false,
+            processData:false,
+            url:'searchface',
+            data:formData,
+            success:function (result){
+                console.log(result)
+                window.location.href="/faceresult";
+            },
+            error:function (jqXHR, textStatus, errorThrown) {
+                alert(jqXHR.responseText)
+            }
+        })
+    }
+    function doChooseImg() {
+        $('#uploadModal').modal();
+    }
+
+    $("#inputimg").change(function(){
+        //获取input file的files文件数组;
+        //$('#filed')获取的是jQuery对象，.get(0)转为原生对象;
+        //这边默认只能选一个，但是存放形式仍然是数组，所以取第一个元素使用[0];
+        var file = $('#inputimg').get(0).files[0];
+        //创建用来读取此文件的对象
+        var reader = new FileReader();
+        //使用该对象读取file文件
+        reader.readAsDataURL(file);
+        //读取文件成功后执行的方法函数
+        reader.onload=function(e) {
+            //读取成功后返回的一个参数e，整个的一个进度事件
+            console.log(e);
+            //选择所要显示图片的img，要赋值给img的src就是e中target下result里面
+            //的base64编码格式的地址
+            $('#photoBoxup').get(0).src = e.target.result;
+        }
+    });
+</script>
+
+
+
+</html>

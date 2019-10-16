@@ -33,11 +33,11 @@
 <input type="hidden" th:value="${searchstr}" id="sstr"/>
 
 <div align="center">
-    <form action="#" th:action="@{/listStudent}" method="post" style="margin-top: 1%">
-        <label for="name" class="lable">查询：</label>
-        <input id="name" name="name" th:value="${str}" class="searchtxt">
-        <button id="search-btn" name="search-btn" class="searchbutton" style="margin-left: 3px">搜索</button>
-    </form>
+    <div style="margin-top: 1%">
+        <label  class="lable">查询：</label>
+        <input id="searchInput"  th:value="${str}" class="searchtxt">
+        <button id="search-btn" onclick="searchclick()" class="searchbutton" style="margin-left: 3px">搜索</button>
+    </div>
 
     &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
     <div style="margin-top: 1%;margin-bottom: 2%">
@@ -58,7 +58,7 @@
                 <input type="text" style="width: 15%;float: left;margin-right: 3%" class="form-control" id="pzsizeBox" th:value="${pzsize}">
                 <button onclick="doApplyLimit()" type="button" class="RoleOfdelete btn btn-primary  btn-sm" style="margin-left:15px;text-align: right">Apply</button>
             </th>
-            <th th:colspan="5" style="text-align: center">搜索结果</th>
+            <th th:colspan="6" style="text-align: center">搜索结果</th>
 
         </tr>
 
@@ -68,6 +68,7 @@
             <th style="text-align: center">手机号</th>
             <th style="text-align: center">QQ号</th>
             <th style="text-align: center">E-Mail</th>
+            <th style="text-align: center">人脸数据</th>
             <th style="text-align: center" width="8%">操作</th>
 
         </tr>
@@ -83,7 +84,17 @@
             <td th:text="${list.phone}"></td>
             <td th:text="${list.qq}"></td>
             <td th:text="${list.email}"></td>
+            <td>
 
+                <a
+                        th:data-stuid="${list.id}"
+                        th:if="${list.img==null}" onclick="doUploadPhoto('',this.getAttribute('data-stuid'))">
+                <button th:if="${list.img==null}" type="button" class="RoleOfdelete btn btn-primary  btn-sm" style="margin-right:15px;">上传</button>
+                </a>
+                <a th:if="${list.img!=null}" th:data-img="${list.img}" onclick="showImg(this.getAttribute('data-img'))">
+                    <button th:if="${list.img!=null}" type="button" class="RoleOfdelete btn btn-primary  btn-sm" style="margin-right:15px;">查看</button>
+                </a>
+            </td>
             <td>
                 <a th:data-id="${list.id}"
                    th:data-name="${list.name}"
@@ -92,7 +103,7 @@
                    th:data-email="${list.email}"
                    onclick="doUpdate(this,this.getAttribute('data-id'),this.getAttribute('data-name')
                    ,this.getAttribute('data-phone'),this.getAttribute('data-qq'),this.getAttribute('data-email'))">
-                <button th:href="${'/admin/updatestu'}" type="button" class="RoleOfdelete btn btn-primary  btn-sm" style="margin-right:15px;">编辑</button>
+                <button th:href="${'/student/updatestu'}" type="button" class="RoleOfdelete btn btn-primary  btn-sm" style="margin-right:15px;">编辑</button>
 
             </a>
                 <a th:data-id="${list.id}"
@@ -102,7 +113,7 @@
                    th:data-email="${list.email}"
                    onclick="doDelete(this,this.getAttribute('data-id'),this.getAttribute('data-name')
                    ,this.getAttribute('data-phone'),this.getAttribute('data-qq'),this.getAttribute('data-email'))">
-                <button th:href="${'/admin/deletestu'}" type="button" class="RoleOfdelete btn btn-primary  btn-sm" style="margin-right:15px;">删除</button>
+                <button th:href="${'/student/deletestu'}" type="button" class="RoleOfdelete btn btn-primary  btn-sm" style="margin-right:15px;">删除</button>
                 </a>
             </td>
 
@@ -114,6 +125,9 @@
 
 
 </div>
+
+
+
 <!-- 登入模态框（Modal） -->
 <div class="modal fade" id="myModal" tabindex="-1" role="dialog" aria-labelledby="myModalLabel" aria-hidden="true">
     <div class="modal-dialog">
@@ -130,7 +144,7 @@
                 </div>
                 <div>
                     <label style="float: left">密码:</label>
-                    <input type="text" class="form-control" placeholder="Password" id="pwdinput">
+                    <input type="password" class="form-control" placeholder="Password" id="pwdinput">
                 </div>
             </div>
             <div class="modal-footer">
@@ -191,8 +205,8 @@
             <div class="modal-body">
                 <label>请填写新的学生信息</label>
                 <div>
-                    <label style="float: left">学号(*):</label>
-                    <input type="text" class="form-control" placeholder="ID" id="stu_codeu" >
+                    <label  style="float: left">学号(*):</label>
+                    <input readonly="readonly" type="text" class="form-control" placeholder="ID" id="stu_codeu" >
                 </div>
                 <div>
                     <label style="float: left">姓名(*):</label>
@@ -262,6 +276,49 @@
     </div><!-- /.modal -->
 </div>
 
+<!-- 照片显示 -->
+<div class="modal fade" id="imgModal" tabindex="-1" role="dialog" aria-labelledby="myModalLabel" aria-hidden="true">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <button type="button" class="close" data-dismiss="modal" aria-hidden="true">&times;</button>
+                <h4 class="modal-title" id="myModalLabel5">个人照片</h4>
+            </div>
+            <div class="modal-body">
+                <img id="photoBox" src="" style="width: 500px;height: auto">
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-default" data-dismiss="modal">取消</button>
+            </div>
+        </div><!-- /.modal-content -->
+    </div><!-- /.modal -->
+</div>
+<!-- 照片上传 -->
+<div class="modal fade" id="uploadModal" tabindex="-1" role="dialog" aria-labelledby="myModalLabel" aria-hidden="true">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <button type="button" class="close" data-dismiss="modal" aria-hidden="true">&times;</button>
+                <h4 class="modal-title" id="myModalLabel6">照片选择</h4>
+            </div>
+
+
+            <div class="form-group">
+                <label class="sr-only">文件输入</label>
+                <input type="file" id="inputimg" accept="image/*">
+            </div>
+
+            <div class="modal-body">
+                <label id="imgStuID"></label>
+                <img id="photoBoxup" src="" style="width: 500px;height: auto;">
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-default" data-dismiss="modal">取消</button>
+                <button type="button" class="btn btn-default" data-dismiss="modal" onclick="doUploadPhoto('Q')">确定</button>
+            </div>
+        </div><!-- /.modal-content -->
+    </div><!-- /.modal -->
+</div>
 
 
 
@@ -287,6 +344,7 @@
 <script>
 
 
+
     window.onload=function () {
         var newhtml="";
         var currp=$("#currpage").val();
@@ -305,6 +363,7 @@
         }
         document.getElementById('paginationBar').innerHTML=newhtml;
     }
+    
     window.operateEvents = {
         'click .RoleOfdelete': function (e, value, row, index) {
             alert(row.dno);
@@ -347,9 +406,9 @@
     }
 
 
-
     function doUpdate(a,preid,prename,prephone,preqq,preemail) {
         var d={
+            targetacc:'admin',
             ctype:'update'
         };
 
@@ -382,11 +441,18 @@
                     cache: false,
                     contentType:'application/json;charset=utf-8',
                     dataType: 'json',
-                    url:'admin/updatestu',
+                    url:'student/updatestu',
 
                     data:JSON.stringify(dataset),
                     success:function (datas) {
-                        alert(JSON.stringify(datas))
+                        if(datas.code==1){
+                            alert("更新成功!")
+                            $('#myModal3').modal('hide');
+                            history.go(0)
+                        }else{
+                            alert("更新失败!")
+                            $('#myModal3').modal('hide');
+                        }
                     },
                     error:function (jqXHR, textStatus, errorThrown) {
                         alert(jqXHR.responseText)
@@ -401,12 +467,15 @@
                 cache: false,
                 contentType:'application/json;charset=utf-8',
                 dataType: 'json',
-                url:'admin/change',
+                url:'student/change',
 
                 data:JSON.stringify(d),
                 success:function (datas) {
                     var code=datas.code
                     if(code.toString()=='210'){ //未登入
+                        document.getElementById("acinput").removeAttribute("readOnly")
+                        document.getElementById("pwdinput").value='';
+                        document.getElementById("acinput").value='';
                         $('#myModal').modal();
                     }
                     if(code.toString()=='0'){   //登入完成
@@ -426,8 +495,14 @@
         }
 
     }
+    function searchclick() {
+        var s=$('#searchInput').val();
+        var size=$('#pzsizeBox').val();
+        window.location.href="/searchstu?str="+s.toString()+"&size="+size.toString()
+    }
     function doDelete(a,preid,prename,prephone,preqq,preemail) {
         var d={
+            targetacc:'admin',
             'ctype':'delete'
         };
         if(a=='Q'){
@@ -447,11 +522,18 @@
                     cache: false,
                     contentType:'application/json;charset=utf-8',
                     dataType: 'json',
-                    url:'admin/deletestu',
+                    url:'student/deletestu',
 
                     data:JSON.stringify(dataset),
                     success:function (datas) {
-                        alert(JSON.stringify(datas))
+                        if(datas.code==1){
+                            alert("删除成功!")
+                            $('#myModal4').modal('hide');
+                            history.go(0)
+                        }else{
+                            alert("操作失败!")
+                            $('#myModal4').modal('hide');
+                        }
                     },
                     error:function (jqXHR, textStatus, errorThrown) {
                         alert(jqXHR.responseText)
@@ -466,11 +548,14 @@
                 cache: false,
                 contentType:'application/json;charset=utf-8',
                 dataType: 'json',
-                url:'admin/change',
+                url:'student/change',
                 data:JSON.stringify(d),
                 success:function (datas) {
                     var code=datas.code
                     if(code.toString()=='210'){
+                        document.getElementById("acinput").removeAttribute("readOnly")
+                        document.getElementById("acinput").value='';
+                        document.getElementById("pwdinput").value='';
                         $('#myModal').modal();
                     }
                     if(code.toString()=='0'){
@@ -492,6 +577,7 @@
     }
     function doAdd(a) {
         var d={
+            targetacc:'admin',
             'ctype':'add'
         };
         //alert(11)
@@ -505,12 +591,12 @@
             var nqq=$('#stu_qq').val(); //新qq
             var nemail=$('#stu_email').val(); //新email
             var nphone=$('#stu_phone').val(); //新phone
+
             if(typeof(nid)==undefined || typeof(nname)==undefined || typeof(nphone)==undefined ||
                 nid=='' || nname=='' || nphone==''){
                 alert('必填字段不能为空')
                 return;
             }
-
 
             var dataset={
                 'ctype':'add',
@@ -526,14 +612,22 @@
                     cache: false,
                     contentType:'application/json;charset=utf-8',
                     dataType: 'json',
-                    url:'admin/addstu',
+                    url:'student/addstu',
 
                     data:JSON.stringify(dataset),
                     success:function (datas) {
-                        alert(JSON.stringify(datas))
+                        //alert(JSON.stringify(datas))
+                        if(datas.code==1){
+                            alert("插入成功!")
+                            $('#myModal2').modal('hide');
+                            history.go(0);
+                        }else{
+                            alert("插入失败!")
+                            $('#myModal2').modal('hide');
+                        }
                     },
                     error:function (jqXHR, textStatus, errorThrown) {
-                        alert(jqXHR.responseText)
+                        alert("error:"+jqXHR.responseText)
                     }
                 }
             )
@@ -546,12 +640,16 @@
                 cache: false,
                 contentType:'application/json;charset=utf-8',
                 dataType: 'json',
-                url:'admin/change',
+                url:'student/change',
                 data:JSON.stringify(d),
                 success:function (datas) {
+
                     //alert('success')
                     var code=datas.code
                     if(code.toString()=='210'){
+                        document.getElementById("acinput").removeAttribute("readOnly")
+                        document.getElementById("acinput").value='';
+                        document.getElementById("pwdinput").value='';
                         $('#myModal').modal();
                     }
                     if(code.toString()=='0'){
@@ -595,9 +693,134 @@
 </script>
 
 
+<script type="text/javascript">
+    $("#inputimg").change(function(){
+        //获取input file的files文件数组;
+        //$('#filed')获取的是jQuery对象，.get(0)转为原生对象;
+        //这边默认只能选一个，但是存放形式仍然是数组，所以取第一个元素使用[0];
+        var file = $('#inputimg').get(0).files[0];
+        //创建用来读取此文件的对象
+        var reader = new FileReader();
+        //使用该对象读取file文件
+        reader.readAsDataURL(file);
+        //读取文件成功后执行的方法函数
+        reader.onload=function(e) {
+            //读取成功后返回的一个参数e，整个的一个进度事件
+            console.log(e);
+            //选择所要显示图片的img，要赋值给img的src就是e中target下result里面
+            //的base64编码格式的地址
+            $('#photoBoxup').get(0).src = e.target.result;
+        }
+    });
+    //显示照片
+    function showImg(imgBase64){
+        //alert(1)
+        document.getElementById("photoBox").src = "faces/"+imgBase64;
+        $('#imgModal').modal();
+    }
+
+    function doUploadPhoto(a,stuid){
+
+        if(a=='Q'){
+            //post 到 updatestu 执行修改操作
+            //alert('update')
+            var nid=$('#stu_codeu').val();
+            var file = $('#inputimg').get(0).files[0];
+
+
+            if(typeof(file)=="undefined" || file==''){
+                alert('未选择文件');
+                return;
+            }else{
+
+            }
+
+            var formData=new FormData();
+            formData.append('img',file);
+            var dataset={
+                'ctype':'uploadimg',
+                'nid':nid
+            }
+            var sid= document.getElementById("imgStuID").innerText;
+
+            formData.append('id',sid);
+            formData.append('ctype','upload');
+            formData.append('targetacc',sid);
+            $.ajax(
+                {
+                    type: "post",
+                    cache: false,
+                    contentType:false,
+                    processData:false,
+                    url:'student/upimg',
+
+                    data:formData,
+                    success:function (datas) {
+                        datas=JSON.parse(datas)
+                        if(datas.code.toString()=='1'){
+                            alert("上传成功!")
+                            $('#myModal3').modal('hide');
+                            history.go(0)
+                        }else{
+                            alert("上传失败!")
+                            $('#myModal3').modal('hide');
+                        }
+                    },
+                    error:function (jqXHR, textStatus, errorThrown) {
+                        alert(jqXHR.responseText)
+                    }
+                }
+            )
+            return;
+        }else{
+
+
+
+            //check login
+            var d={
+                targetacc:stuid,
+                ctype:"upload"
+            }
+            $.ajax({
+                type: "post",
+                cache: false,
+                contentType:'application/json;charset=utf-8',
+                dataType: 'json',
+                url:'student/change',
+
+                data:JSON.stringify(d),
+                success:function (datas) {
+                    var code=datas.code
+                    if(code.toString()=='210'){ //需要登入
+                        document.getElementById("acinput").value=stuid;
+                        document.getElementById("pwdinput").value='';
+                        document.getElementById("acinput").setAttribute("readOnly",true);
+                        //这里应该弹出身份验证
+                        $('#myModal').modal();
+                    }
+                    if(code.toString()=='0'){   //能够干
+
+                        document.getElementById("imgStuID").innerText=stuid;
+                        //alert(stuid)
+                        $('#uploadModal').modal();
+                    }
+                },
+                error:function (jqXHR, textStatus, errorThrown) {
+                    alert(jqXHR.responseText)
+                }
+
+            })
+        }
+    }
+
+</script>
 
 
 </body>
+
+
+
+
 
 
 </html>

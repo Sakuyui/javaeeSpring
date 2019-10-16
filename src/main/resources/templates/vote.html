@@ -1,0 +1,290 @@
+<!DOCTYPE html>
+<html lang="en" xmlns:th="http://www.thymeleaf.org" xmlns="">
+<head>
+    <meta charset="UTF-8">
+    <title>软院投票</title>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/echarts/4.3.0/echarts.min.js"></script>
+    <script th:src="@{/static/jquery-3.4.1.js}"></script>
+    <!-- 最新版本的 Bootstrap 核心 CSS 文件 -->
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@3.3.7/dist/css/bootstrap.min.css" integrity="sha384-BVYiiSIFeK1dGmJRAkycuHAHRg32OmUcww7on3RYdg4Va+PmSTsz/K68vbdEjh4u" crossorigin="anonymous">
+    <!-- 可选的 Bootstrap 主题文件（一般不用引入） -->
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@3.3.7/dist/css/bootstrap-theme.min.css" integrity="sha384-rHyoN1iRsVXV4nD0JutlnGaslCJuC7uwjduW9SVrLvRYooPp2bWYgmgJQIXwl/Sp" crossorigin="anonymous">
+
+    <!-- 最新的 Bootstrap 核心 JavaScript 文件 -->
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@3.3.7/dist/js/bootstrap.min.js" integrity="sha384-Tc5IQib027qvyjSMfHjOMaLkfuWVxZxUPnCJA7l2mCWNIpG9mGCD8wGNIcPD7Txa" crossorigin="anonymous"></script>
+    <!-- Latest compiled and minified CSS -->
+    <link rel="stylesheet" href="https://unpkg.com/bootstrap-table@1.15.4/dist/bootstrap-table.min.css">
+
+    <!-- Latest compiled and minified JavaScript -->
+    <script src="https://unpkg.com/bootstrap-table@1.15.4/dist/bootstrap-table.min.js"></script>
+    <!-- Latest compiled and minified Locales -->
+    <script src="https://unpkg.com/bootstrap-table@1.15.4/dist/locale/bootstrap-table-zh-CN.min.js"></script>
+    <script src="/static/js/searchUI.js" type="text/javascript" charset="UTF-8"></script>
+    <link rel="stylesheet" href="/static/css/result.css">
+    <link rel="stylesheet" href="/static/css/vote.css">
+    <script type="text/javascript" th:src="@{/js/index.js}"></script>
+    <script type="text/javascript" src="/static/js/bootstrap-paginator.js"></script>
+
+</head>
+
+
+<body>
+<div class="votechart">
+    <div id="mainchart" style="text-align: center;width: 800px;height: 600px;align-content: center;align-items: center;" ></div>
+</div>
+<button  type="button" class="RoleOfdelete btn btn-primary  btn-sm" style="display:inline;margin-right:15px;" onclick="refreshChart()">刷新</button>
+<button  type="button" class="RoleOfdelete btn btn-primary  btn-sm" style="margin-right:15px;" onclick="showVerify()">投票</button>
+
+</body>
+
+<div id="choosingBoxes">
+
+    <div class="radio">
+        <label>
+            <input type="radio" name="optionsRadios" id="optionsRadios1"
+                   value="option1" checked> 选项 1
+        </label>
+    </div>
+    <div class="radio">
+        <label>
+            <input th:data-id="1" type="radio" name="optionsRadios" id="optionsRadios2" onchange="onChange(this.getAttribute('data=id'))"
+                   value="option2">
+            选项 2 - 选择它将会取消选择选项 1
+        </label>
+    </div>
+</div>
+
+
+
+
+<script src="https://pv.sohu.com/cityjson?ie=utf-8"></script>
+<script>
+    //外网IP地址
+
+    var ip = returnCitySN["cip"];
+    console.info(ip);
+</script>
+
+
+
+
+<input type="text" value="" id="choosedval" hidden="hidden"/>
+
+<!-- 登入模态框（Modal） -->
+<div class="modal fade" id="verifyModal" tabindex="-1" role="dialog" aria-labelledby="myModalLabel" aria-hidden="true">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <button type="button" class="close" data-dismiss="modal" aria-hidden="true">&times;</button>
+                <h4 class="modal-title" id="myModalLabel">身份验证</h4>
+            </div>
+            <div class="modal-body">
+                <label>我们需要向您的手机发送验证码</label>
+                <div>
+                    <label style="float: left">手机号:</label>
+                    <input type="text" class="form-control" placeholder="Phone Number" id="phoneNumBox" >
+                </div>
+                <div>
+                    <label style="float: left">验证码:</label>
+                    <input type="text" class="form-control" placeholder="Verify Code" id="verifyCodeBox">
+                    <button  type="button" class="RoleOfdelete btn btn-primary  btn-sm" style="margin-right:15px;" onclick="sendVerifyCode()">发送验证码</button>
+
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-default" data-dismiss="modal">取消</button>
+                <button type="button" class="btn btn-primary" onclick="doFinalVote()">确定</button>
+            </div>
+        </div><!-- /.modal-content -->
+    </div><!-- /.modal -->
+</div>
+
+
+
+
+<script type="text/javascript">
+    function sendVerifyCode() {
+        var phonenumBox=document.getElementById("phoneNumBox").value;
+        if(!(/^1[3456789]\d{9}$/.test(phonenumBox))){
+            alert("手机号格式错误");
+            return;
+        }
+
+
+        //step2
+        $.ajax({
+            type: "post",
+            cache: false,
+            contentType:'application/json;charset=utf-8',
+            dataType: 'json',
+
+            url:'/vote/verify',
+            data:JSON.stringify({
+                'ctype':'sendMessage',
+                'phone':phonenumBox
+            }),
+            success:function (datas) {
+                console.log(datas)
+                if(datas.code==-3){
+                    alert("1分钟内无法重复发送短信")
+                    return;
+                }else if(datas.code==0){
+                    alert("发送成功")
+                    document.getElementById('verifyCodeBox').removeAttribute('readonly')
+                }else if(datas.code==-2){
+                    alert("该手机号已投过票")
+                    return;
+                }
+            },
+            error:function (x) {
+                alert(x)
+            }
+        })
+    }
+
+    function doFinalVote() {
+        var verifycodeinput=$('#verifyCodeBox').val();
+        var phone=document.getElementById("phoneNumBox").value;
+        if(verifycodeinput==''){
+            alert('请输入验证码')
+            return;
+        }
+        //try vote
+
+        $.ajax({
+            type: "post",
+            cache: false,
+            contentType:'application/json;charset=utf-8',
+            dataType: 'json',
+            url:'dorealvote',
+            data:JSON.stringify({
+                'ctype':'sendMessage',
+                'phone':phone,
+                'vcode':verifycodeinput,
+                'tid':$('#choosedval').val()
+            }),
+            success:function (datas) {
+                if(datas.code==1){
+                    alert("投票成功")
+                }else if(datas.code=='-3'){
+                    alert("该手机号已投过票")
+                }else if(datas.code=='-5'){
+                    alert("验证码错误或已过期")
+                }else{
+                    alert("投票失败,code="+datas.code.toString())
+                }
+            },
+            error:function (x) {
+                alert(x)
+            }
+        })
+    }
+    function showVerify(){
+        var cbox=document.getElementById("choosedval");
+        if(cbox.value==''){
+            alert('请选择一位老师进行投票');
+            return;
+        }
+
+        //step 1. preVote
+        $.ajax({
+                type: "post",
+                cache: false,
+                contentType:'application/json;charset=utf-8',
+                dataType: 'json',
+                url:'dovote/prevote',
+                data:JSON.stringify({'ip':ip}),
+                success:function (datas) {
+                    //alert('success'+JSON.stringify(datas))
+                    var c=datas.code;
+                    if(c!=0){
+                        alert("操作失败,可能操作过于频繁")
+                    }else{
+                        //step 2:
+                        document.getElementById('verifyCodeBox').setAttribute('readonly',true);
+                        $('#verifyModal').modal();
+                    }
+                },
+                error:function (jqXHR, textStatus, errorThrown) {
+                    alert('error'+jqXHR.responseText)
+                }
+        });
+
+    }
+    window.onload=function (ev) {
+       refreshChart();
+       setInterval("refreshChart();",10*1000);  //10秒刷新一次
+    }
+
+
+    function show_selected_item_val(a) {
+        document.getElementById("choosedval").value= a.value;
+    }
+    function refreshChart() {
+        // 基于准备好的dom，初始化echarts实例
+        var myChart = echarts.init(document.getElementById('mainchart'));
+        $.ajax({
+            type: "get",
+            cache: false,
+            contentType:'application/json;charset=utf-8',
+            dataType: 'json',
+            url:'https://localhost:9239/getVote',
+            success:function (datas) {
+                console.log(datas);
+                var inner='';
+                tnames=[]
+                vcount=[]
+                //遍历
+                for(var i=0;i<datas.length;i++){
+                    tnames[i]=(datas[i].tid).toString()+':'+datas[i].tname;
+                    vcount[i]=datas[i].vote;
+                    inner=inner+'<div class="radio">'+
+                                   '<label>'+
+                                  '<input  type="radio" name="optionsRadios" id="optionsRadios'+i.toString()+'"  onchange="show_selected_item_val(this)" value="'+(datas[i].tid).toString()+'" >'+'教师ID:'+(datas[i].tid).toString()
+                        +" 教师名:"+datas[i].tname
+                    +' </label>' +
+                    '</div>';
+
+                }
+
+                var option = {
+                    title: {
+                        text: '当前投票结果'
+                    },
+                    tooltip: {},
+                    legend: {
+                        data:['票数']
+                    },
+                    xAxis: {
+                        data: tnames
+                    },
+                    yAxis: {},
+
+
+                    series: [{
+                        name: '票数',
+                        type: 'bar',
+                        data: vcount
+                    }]
+                };
+
+                // 使用刚指定的配置项和数据显示图表。
+                myChart.setOption(option);
+
+                //更新选择框
+                var divchoosingboxes=document.getElementById("choosingBoxes");
+                divchoosingboxes.innerHTML=inner;
+
+
+            },
+            error:function (jqXHR, textStatus, errorThrown) {
+                alert('error'+jqXHR.responseText)
+            }
+
+        })
+    }
+</script>
+
+
+
+</html>

@@ -1,106 +1,85 @@
 package com.akb.springsql.config;
+import com.alibaba.druid.pool.DruidDataSource;
+import com.alibaba.druid.spring.boot.autoconfigure.properties.DruidStatProperties;
 
-import java.sql.SQLException;
-
-import javax.sql.DataSource;
-
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-import org.springframework.beans.factory.annotation.Value;
+import com.alibaba.druid.support.http.StatViewServlet;
+import com.alibaba.druid.support.http.WebStatFilter;
+import com.alibaba.druid.support.spring.stat.DruidStatInterceptor;
+import org.springframework.aop.framework.autoproxy.BeanNameAutoProxyCreator;
+import org.springframework.boot.context.properties.ConfigurationProperties;
+import org.springframework.boot.web.servlet.FilterRegistrationBean;
+import org.springframework.boot.web.servlet.ServletRegistrationBean;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
-import org.springframework.context.annotation.Primary;
 
-import com.alibaba.druid.pool.DruidDataSource;
+import javax.sql.DataSource;
+import java.util.HashMap;
 
+/**
+ * druid 性能检测
+ *
+ * @author Administrator
+ * @date 2017/12/21 0021
+ */
 @Configuration
-public class DruidConfig {
-    private Logger logger = LoggerFactory.getLogger(DruidConfig.class);
+public abstract class DruidConfig  {
 
-    @Value("${spring.datasource.url}")
-    private String dbUrl;
+    @Bean
+    @ConfigurationProperties(prefix="spring.datasource")
+    public DataSource druidDataSource() {
+        return new DruidDataSource();
+    }
 
-    @Value("${spring.datasource.username}")
-    private String username;
 
-    @Value("${spring.datasource.password}")
-    private String password;
+    @Bean
+    public ServletRegistrationBean druidServlet() {
+        ServletRegistrationBean servletRegistrationBean = new ServletRegistrationBean();
+        servletRegistrationBean.setServlet(new StatViewServlet());
+        servletRegistrationBean.addUrlMappings("/druid/*");
 
-    @Value("${spring.datasource.driver-class-name}")
-    private String driverClassName;
 
-    @Value("${spring.datasource.initial-size}")
-    private int initialSize;
 
-    @Value("${spring.datasource.min-idle}")
-    private int minIdle;
+        HashMap<String, String> initParameters = new HashMap<>();
+        // 用户名
+        initParameters.put("loginUsername", "druid");
+        // 密码
+        initParameters.put("loginPassword", "druid");
+        /*禁止html页面上的reset all  功能*/
+        initParameters.put("resetEnable", "false");
+        //ip 白名单,没有配置或者为空，则允许所有的访问
+        initParameters.put("allow", "127.0.0.1");
+        //ip黑名单,当两种共存的时候deny优先于allow
+        /*initParameters.put("deny","125.23.23.1");*/
+        servletRegistrationBean.setInitParameters(initParameters);
 
-    @Value("${spring.datasource.max-active}")
-    private int maxActive;
+        return servletRegistrationBean;
+    }
 
-    @Value("${spring.datasource.max-wait}")
-    private int maxWait;
 
-    @Value("${spring.datasource.time-between-eviction-runs-millis}")
-    private int timeBetweenEvictionRunsMillis;
+    @Bean
+    public FilterRegistrationBean filterRegistrationBean() {
+        FilterRegistrationBean filterRegistrationBean = new FilterRegistrationBean();
 
-    @Value("${spring.datasource.min-evictable-idle-time-millis}")
-    private int minEvictableIdleTimeMillis;
+        filterRegistrationBean.setFilter(new WebStatFilter());
+        filterRegistrationBean.addUrlPatterns("/*");
+        filterRegistrationBean.addInitParameter("exclusions", "*.js,*.gif,*.jpg,*.bmp,*.png,*.css,*.ico,/druid/*");
+        return filterRegistrationBean;
+    }
 
-//    @Value("${spring.datasource.validation-query}")
-//    private String validationQuery;
+    @Bean(value = "druid-interceptor")
+    public DruidStatInterceptor DruidStatInterceptor() {
+        DruidStatInterceptor druidStatInterceptor = new DruidStatInterceptor();
+        return druidStatInterceptor;
+    }
 
-    @Value("${spring.datasource.test-while-idle}")
-    private boolean testWhileIdle;
 
-    @Value("${spring.datasource.test-on-borrow}")
-    private boolean testOnBorrow;
-
-    @Value("${spring.datasource.test-on-return}")
-    private boolean testOnReturn;
-
-    @Value("${spring.datasource.pool-prepared-statements}")
-    private boolean poolPreparedStatements;
-
-    @Value("${spring.datasource.max-pool-prepared-statement-per-connection-size}")
-    private int maxPoolPreparedStatementPerConnectionSize;
-
-    @Value("${spring.datasource.filters}")
-    private String filters;
-
-//    @Value("${spring.datasource.connection-properties}")
-//    private String connectionProperties;
-
-    @Bean     //声明其为Bean实例
-    @Primary  //在同样的DataSource中，首先使用被标注的DataSource
-    public DataSource dataSource(){
-        DruidDataSource datasource = new DruidDataSource();
-
-        datasource.setUrl(this.dbUrl);
-        datasource.setUsername(username);
-        datasource.setPassword(password);
-        datasource.setDriverClassName(driverClassName);
-
-        //configuration
-        datasource.setInitialSize(initialSize);
-        datasource.setMinIdle(minIdle);
-        datasource.setMaxActive(maxActive);
-        datasource.setMaxWait(maxWait);
-        datasource.setTimeBetweenEvictionRunsMillis(timeBetweenEvictionRunsMillis);
-        datasource.setMinEvictableIdleTimeMillis(minEvictableIdleTimeMillis);
-//      datasource.setValidationQuery(validationQuery);
-        datasource.setTestWhileIdle(testWhileIdle);
-        datasource.setTestOnBorrow(testOnBorrow);
-        datasource.setTestOnReturn(testOnReturn);
-        datasource.setPoolPreparedStatements(poolPreparedStatements);
-        datasource.setMaxPoolPreparedStatementPerConnectionSize(maxPoolPreparedStatementPerConnectionSize);
-        try {
-            datasource.setFilters(filters);
-        } catch (SQLException e) {
-            logger.error("druid configuration initialization filter", e);
-        }
-//      datasource.setConnectionProperties(connectionProperties);
-
-        return datasource;
+    @Bean
+    public BeanNameAutoProxyCreator beanNameAutoProxyCreator() {
+        BeanNameAutoProxyCreator beanNameAutoProxyCreator = new BeanNameAutoProxyCreator();
+        beanNameAutoProxyCreator.setProxyTargetClass(true);
+        //设置要监控的bean的id
+        /*beanNameAutoProxyCreator.setBeanNames("sysRoleMapper","loginController");*/
+        beanNameAutoProxyCreator.setInterceptorNames("druid-interceptor");
+        return beanNameAutoProxyCreator;
     }
 }

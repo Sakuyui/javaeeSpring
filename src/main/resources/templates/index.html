@@ -10,16 +10,79 @@
 
 </head>
 <body>
-<h1>Hello World!</h1>
+
+
+<!-- 轮播广告 -->
+<div id="LBbox" class="carousel slide" data-ride="carousel">
+    <!-- 圆点按钮 -->
+    <ol class="carousel-indicators">
+        <li data-target="#LBbox" data-slide-to="0" class="active"></li>
+        <li data-target="#LBbox" data-slide-to="1"></li>
+    </ol>
+    <!-- 轮播内容 -->
+    <div class="carousel-inner" role="listbox">
+        <div class="item active">
+            <img src="/static/images/vote.png" alt="1 slide" style="height: 50%">
+            <div class="carousel-caption">
+
+                <p>
+                    <a href="#" class="btn btn-lg btn-primary" role="button" onclick="toVote()">点击投票</a>
+                </p>
+            </div>
+        </div>
+
+
+    </div>
+    <!-- 左按钮 -->
+    <a href="#LBbox" class="left carousel-control" role="button" data-slide="prev">
+        <span class="glyphicon glyphicon-chevron-left" aria-hidden="true"></span>
+        <span class="sr-only">上一页</span>
+    </a>
+    <!-- 右按钮 -->
+    <a href="#LBbox" class="right carousel-control" role="button" data-slide="next">
+        <span class="glyphicon glyphicon-chevron-right" aria-hidden="true"></span>
+        <span class="sr-only">下一页</span>
+    </a>
+</div>
+
+
+
 <div>
     <img th:src="@{static/images/searchLogo.png}" class="img-responsive center-block img_search" />
 </div>
 <div class="searchbox">
     <img th:src="@{static/images/a.png}" class="optionIcon" onclick="hideOrShowLimitInput()">
     <input type="text" value="" class="searchtxt" id="searchBox" />
+    <img th:src="@{static/images/icon_camera.png}" class="optionIcon" onclick="doChooseImg()">
+
+    <input type="submit" onclick="doPostinf()" value="搜索" class="searchbutton" style="margin-left: 1%">
+</div>
+
+<!-- 照片选择 -->
+<div class="modal fade" id="uploadModal" tabindex="-1" role="dialog" aria-labelledby="myModalLabel" aria-hidden="true">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <button type="button" class="close" data-dismiss="modal" aria-hidden="true">&times;</button>
+                <h4 class="modal-title" id="myModalLabel">照片选择</h4>
+            </div>
 
 
-    <input type="submit" onclick="doPostinf()" value="搜索" class="searchbutton">
+            <div class="form-group">
+                <label class="sr-only">文件输入</label>
+                <input type="file" id="inputimg" accept="image/*">
+            </div>
+
+            <div class="modal-body">
+                <label id="imgStuID"></label>
+                <img id="photoBoxup" src="" style="width: 500px;height: auto;">
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-default" data-dismiss="modal">取消</button>
+                <button type="button" class="btn btn-default" data-dismiss="modal" onclick="doFaceSearch()">确定</button>
+            </div>
+        </div><!-- /.modal-content -->
+    </div><!-- /.modal -->
 </div>
 
 <img src="/static/images/2233.jpg" class="bmllogo">
@@ -32,6 +95,66 @@
             return;
         }
         window.location.href='/searchstu?str='+str
+    }
+
+    function doFaceSearch() {
+        var file = $('#inputimg').get(0).files[0];
+
+
+        if(typeof(file)=="undefined" || file==''){
+            alert('未选择文件');
+            return;
+        }else{
+
+        }
+
+
+
+        var formData=new FormData();
+        formData.append('img',file);
+
+        $.ajax({
+            type: "post",
+            cache: false,
+            contentType:false,
+            processData:false,
+            url:'searchface',
+            data:formData,
+            success:function (result){
+                console.log(result)
+                window.location.href="/faceresult";
+            },
+            error:function (jqXHR, textStatus, errorThrown) {
+                alert(jqXHR.responseText)
+            }
+        })
+    }
+    function doChooseImg() {
+        $('#uploadModal').modal();
+    }
+
+    $("#inputimg").change(function(){
+        //获取input file的files文件数组;
+        //$('#filed')获取的是jQuery对象，.get(0)转为原生对象;
+        //这边默认只能选一个，但是存放形式仍然是数组，所以取第一个元素使用[0];
+        var file = $('#inputimg').get(0).files[0];
+        //创建用来读取此文件的对象
+        var reader = new FileReader();
+        //使用该对象读取file文件
+        reader.readAsDataURL(file);
+        //读取文件成功后执行的方法函数
+        reader.onload=function(e) {
+            //读取成功后返回的一个参数e，整个的一个进度事件
+            console.log(e);
+            //选择所要显示图片的img，要赋值给img的src就是e中target下result里面
+            //的base64编码格式的地址
+            $('#photoBoxup').get(0).src = e.target.result;
+        }
+    });
+
+
+    function toVote() {
+        window.location.href="vote"
     }
 </script>
 </body>

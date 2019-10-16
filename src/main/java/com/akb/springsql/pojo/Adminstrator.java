@@ -1,6 +1,8 @@
 package com.akb.springsql.pojo;
 
-public class Adminstrator {
+import java.io.Serializable;
+
+public class Adminstrator implements Serializable {
     private String account;
     private String pwd;
     private String cookiesk;
